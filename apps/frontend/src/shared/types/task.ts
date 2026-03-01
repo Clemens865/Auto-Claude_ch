@@ -155,6 +155,12 @@ export interface TaskDraft {
   referencedFiles: ReferencedFile[];
   requireReviewBeforeCoding?: boolean;
   fastMode?: boolean;
+  // Build settings
+  sourceFilePath?: string;
+  qaMode?: 'standard' | 'ralph';
+  memoryBackend?: 'default' | 'graphiti' | 'claude-flow' | 'file';
+  maxQaIterations?: number;
+  showBuildSettings?: boolean;
   savedAt: Date;
 }
 
@@ -240,6 +246,14 @@ export interface TaskMetadata {
   prUrl?: string;  // GitHub PR URL if task has been submitted as a PR
   useWorktree?: boolean;  // If false, use direct mode (no worktree isolation) - default is true for safety
   useLocalBranch?: boolean;  // If true, use the local branch directly instead of preferring origin/branch (preserves gitignored files)
+
+  // Source file (PRD/spec document)
+  sourceFilePath?: string;  // Absolute path to source document (e.g., PRD.md)
+
+  // Build pipeline settings
+  qaMode?: 'standard' | 'ralph';  // QA validation mode
+  memoryBackend?: 'default' | 'graphiti' | 'claude-flow' | 'file';  // Memory backend override
+  maxQaIterations?: number;  // Max QA review/fix cycles (default: 3)
 
   // Archive status
   archivedAt?: string;  // ISO date when task was archived

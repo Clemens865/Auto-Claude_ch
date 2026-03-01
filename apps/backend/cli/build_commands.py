@@ -61,6 +61,7 @@ def handle_build_command(
     skip_qa: bool,
     force_bypass_approval: bool,
     base_branch: str | None = None,
+    qa_mode: str | None = None,
 ) -> None:
     """
     Handle the main build command.
@@ -77,6 +78,7 @@ def handle_build_command(
         skip_qa: Skip automatic QA validation
         force_bypass_approval: Force bypass approval check
         base_branch: Base branch for worktree creation (default: current branch)
+        qa_mode: QA mode — "standard" (separate reviewer/fixer) or "ralph" (single-session)
     """
     # Lazy imports to avoid loading heavy modules
     from agent import run_autonomous_agent, sync_spec_to_source
@@ -86,7 +88,7 @@ def handle_build_command(
         debug_section,
         debug_success,
     )
-    from phase_config import get_phase_model
+    from phase_config import get_phase_model, get_qa_mode
     from prompts_pkg.prompts import (
         get_base_branch_from_metadata,
         get_use_local_branch_from_metadata,
@@ -261,15 +263,29 @@ def handle_build_command(
             print("\nAll subtasks completed. Now running QA validation loop...")
             print("This ensures production-quality output before sign-off.\n")
 
+            resolved_qa_mode = get_qa_mode(spec_dir, qa_mode)
+
             try:
-                qa_approved = asyncio.run(
-                    run_qa_validation_loop(
-                        project_dir=working_dir,
-                        spec_dir=spec_dir,
-                        model=model,
-                        verbose=verbose,
+                if resolved_qa_mode == "ralph":
+                    from qa.ralph_loop import run_ralph_qa_loop
+
+                    qa_approved = asyncio.run(
+                        run_ralph_qa_loop(
+                            project_dir=working_dir,
+                            spec_dir=spec_dir,
+                            model=model,
+                            verbose=verbose,
+                        )
                     )
-                )
+                else:
+                    qa_approved = asyncio.run(
+                        run_qa_validation_loop(
+                            project_dir=working_dir,
+                            spec_dir=spec_dir,
+                            model=model,
+                            verbose=verbose,
+                        )
+                    )
 
                 if qa_approved:
                     print("\n" + "=" * 70)

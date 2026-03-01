@@ -11,7 +11,7 @@
  */
 import { useRef, useState, useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, ChevronUp, Image as ImageIcon, X, Camera, Zap, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, Image as ImageIcon, X, Camera, Zap, Info, FileText, Settings } from 'lucide-react';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -92,6 +92,20 @@ interface TaskFormFieldsProps {
   onFastModeChange?: (value: boolean) => void;
   showFastModeToggle?: boolean;
 
+  // Source file
+  sourceFilePath?: string;
+  onSourceFilePathChange?: (path: string) => void;
+
+  // Build settings
+  showBuildSettings?: boolean;
+  onShowBuildSettingsChange?: (show: boolean) => void;
+  qaMode?: 'standard' | 'ralph';
+  onQaModeChange?: (mode: 'standard' | 'ralph') => void;
+  memoryBackend?: 'default' | 'graphiti' | 'claude-flow' | 'file';
+  onMemoryBackendChange?: (backend: 'default' | 'graphiti' | 'claude-flow' | 'file') => void;
+  maxQaIterations?: number;
+  onMaxQaIterationsChange?: (value: number) => void;
+
   // Form state
   disabled?: boolean;
   error?: string | null;
@@ -144,6 +158,16 @@ export function TaskFormFields({
   fastMode = false,
   onFastModeChange,
   showFastModeToggle = false,
+  sourceFilePath = '',
+  onSourceFilePathChange,
+  showBuildSettings = false,
+  onShowBuildSettingsChange,
+  qaMode = 'standard',
+  onQaModeChange,
+  memoryBackend = 'default',
+  onMemoryBackendChange,
+  maxQaIterations = 3,
+  onMaxQaIterationsChange,
   disabled = false,
   error,
   onError,
@@ -517,6 +541,158 @@ export function TaskFormFields({
               disabled={disabled}
               idPrefix={idPrefix}
             />
+          </div>
+        )}
+
+        {/* Source File (PRD) */}
+        {onSourceFilePathChange && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-foreground">
+              {t('tasks:form.sourceFile')}
+            </Label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 flex items-center gap-2 h-9 rounded-md border border-input bg-background px-3 text-sm">
+                {sourceFilePath ? (
+                  <>
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="truncate text-foreground">{sourceFilePath.split('/').pop() || sourceFilePath.split('\\').pop()}</span>
+                    <button
+                      type="button"
+                      onClick={() => onSourceFilePathChange('')}
+                      className="ml-auto text-muted-foreground hover:text-foreground shrink-0"
+                      disabled={disabled}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">{t('tasks:form.sourceFilePlaceholder')}</span>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                disabled={disabled}
+                onClick={async () => {
+                  const filePath = await window.electronAPI.selectFile();
+                  if (filePath) onSourceFilePathChange(filePath);
+                }}
+              >
+                {t('tasks:form.sourceFileBrowse')}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('tasks:form.sourceFileDescription')}
+            </p>
+          </div>
+        )}
+
+        {/* Build Settings Toggle */}
+        {onShowBuildSettingsChange && (
+          <button
+            type="button"
+            onClick={() => onShowBuildSettingsChange(!showBuildSettings)}
+            className={cn(
+              'flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors',
+              'w-full justify-between py-2 px-3 rounded-md hover:bg-muted/50'
+            )}
+            disabled={disabled}
+            aria-expanded={showBuildSettings}
+            aria-controls={`${prefix}build-settings-section`}
+          >
+            <span className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              {t('tasks:form.buildSettings')}
+            </span>
+            {showBuildSettings ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </button>
+        )}
+
+        {/* Build Settings Content */}
+        {showBuildSettings && onShowBuildSettingsChange && (
+          <div id={`${prefix}build-settings-section`} className="space-y-4 p-4 rounded-lg border border-border bg-muted/30">
+            <p className="text-xs text-muted-foreground">{t('tasks:form.buildSettingsDescription')}</p>
+
+            {/* QA Mode */}
+            {onQaModeChange && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">{t('tasks:form.qaMode')}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onQaModeChange('standard')}
+                    disabled={disabled}
+                    className={cn(
+                      'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors',
+                      qaMode === 'standard'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-muted-foreground/50'
+                    )}
+                  >
+                    <span className="text-sm font-medium">{t('tasks:form.qaModeStandard')}</span>
+                    <span className="text-xs text-muted-foreground">{t('tasks:form.qaModeStandardDescription')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onQaModeChange('ralph')}
+                    disabled={disabled}
+                    className={cn(
+                      'flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-colors',
+                      qaMode === 'ralph'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-muted-foreground/50'
+                    )}
+                  >
+                    <span className="text-sm font-medium">{t('tasks:form.qaModeRalph')}</span>
+                    <span className="text-xs text-muted-foreground">{t('tasks:form.qaModeRalphDescription')}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Memory Backend */}
+            {onMemoryBackendChange && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">{t('tasks:form.memoryBackend')}</Label>
+                <select
+                  value={memoryBackend}
+                  onChange={(e) => onMemoryBackendChange(e.target.value as 'default' | 'graphiti' | 'claude-flow' | 'file')}
+                  disabled={disabled}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="default">{t('tasks:form.memoryBackendDefault')}</option>
+                  <option value="graphiti">{t('tasks:form.memoryBackendGraphiti')}</option>
+                  <option value="claude-flow">{t('tasks:form.memoryBackendClaudeFlow')}</option>
+                  <option value="file">{t('tasks:form.memoryBackendFile')}</option>
+                </select>
+              </div>
+            )}
+
+            {/* Max QA Iterations */}
+            {onMaxQaIterationsChange && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground">{t('tasks:form.maxQaIterations')}</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={maxQaIterations}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(val) && val >= 1 && val <= 10) onMaxQaIterationsChange(val);
+                  }}
+                  disabled={disabled}
+                  className="h-9 w-24"
+                />
+                <p className="text-xs text-muted-foreground">{t('tasks:form.maxQaIterationsDescription')}</p>
+              </div>
+            )}
           </div>
         )}
 

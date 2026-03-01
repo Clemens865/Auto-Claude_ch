@@ -128,6 +128,13 @@ export function TaskCreationWizard({
   // Fast mode
   const [fastMode, setFastMode] = useState(false);
 
+  // Source file and build settings
+  const [sourceFilePath, setSourceFilePath] = useState('');
+  const [showBuildSettings, setShowBuildSettings] = useState(false);
+  const [qaMode, setQaMode] = useState<'standard' | 'ralph'>('standard');
+  const [memoryBackend, setMemoryBackend] = useState<'default' | 'graphiti' | 'claude-flow' | 'file'>('default');
+  const [maxQaIterations, setMaxQaIterations] = useState(3);
+
   // Show Fast Mode toggle when any phase uses an Opus model
   const showFastModeToggle = useMemo(() => {
     if (!phaseModels) return false;
@@ -173,6 +180,11 @@ export function TaskCreationWizard({
         setReferencedFiles(draft.referencedFiles ?? []);
         setRequireReviewBeforeCoding(draft.requireReviewBeforeCoding ?? false);
         setFastMode(draft.fastMode ?? false);
+        setSourceFilePath(draft.sourceFilePath ?? '');
+        setQaMode(draft.qaMode ?? 'standard');
+        setMemoryBackend(draft.memoryBackend ?? 'default');
+        setMaxQaIterations(draft.maxQaIterations ?? 3);
+        setShowBuildSettings(draft.showBuildSettings ?? false);
         setIsDraftRestored(true);
 
         if (draft.category || draft.priority || draft.complexity || draft.impact) {
@@ -196,6 +208,11 @@ export function TaskCreationWizard({
         setReferencedFiles([]);
         setRequireReviewBeforeCoding(false);
         setFastMode(false);
+        setSourceFilePath('');
+        setShowBuildSettings(false);
+        setQaMode('standard');
+        setMemoryBackend('default');
+        setMaxQaIterations(3);
         setBaseBranch(PROJECT_DEFAULT_BRANCH);
         setUseWorktree(true);
         setIsDraftRestored(false);
@@ -273,8 +290,13 @@ export function TaskCreationWizard({
     referencedFiles,
     requireReviewBeforeCoding,
     fastMode,
+    sourceFilePath: sourceFilePath || undefined,
+    qaMode: qaMode !== 'standard' ? qaMode : undefined,
+    memoryBackend: memoryBackend !== 'default' ? memoryBackend : undefined,
+    maxQaIterations: maxQaIterations !== 3 ? maxQaIterations : undefined,
+    showBuildSettings: showBuildSettings || undefined,
     savedAt: new Date()
-  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding, fastMode]);
+  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding, fastMode, sourceFilePath, qaMode, memoryBackend, maxQaIterations, showBuildSettings]);
 
   /**
    * Detect @ mention being typed and show autocomplete
@@ -457,6 +479,10 @@ export function TaskCreationWizard({
       // This preserves gitignored files (.env, configs) by not switching to origin
       if (isSelectedBranchLocal) metadata.useLocalBranch = true;
       metadata.fastMode = fastMode;
+      if (sourceFilePath) metadata.sourceFilePath = sourceFilePath;
+      if (qaMode !== 'standard') metadata.qaMode = qaMode;
+      if (memoryBackend !== 'default') metadata.memoryBackend = memoryBackend;
+      if (maxQaIterations !== 3) metadata.maxQaIterations = maxQaIterations;
 
       const task = await createTask(projectId, title.trim(), description.trim(), metadata);
       if (task) {
@@ -489,6 +515,11 @@ export function TaskCreationWizard({
     setReferencedFiles([]);
     setRequireReviewBeforeCoding(false);
     setFastMode(false);
+    setSourceFilePath('');
+    setShowBuildSettings(false);
+    setQaMode('standard');
+    setMemoryBackend('default');
+    setMaxQaIterations(3);
     setBaseBranch(PROJECT_DEFAULT_BRANCH);
     setUseWorktree(true);
     setError(null);
@@ -674,6 +705,16 @@ export function TaskCreationWizard({
           fastMode={fastMode}
           onFastModeChange={setFastMode}
           showFastModeToggle={showFastModeToggle}
+          sourceFilePath={sourceFilePath}
+          onSourceFilePathChange={setSourceFilePath}
+          showBuildSettings={showBuildSettings}
+          onShowBuildSettingsChange={setShowBuildSettings}
+          qaMode={qaMode}
+          onQaModeChange={setQaMode}
+          memoryBackend={memoryBackend}
+          onMemoryBackendChange={setMemoryBackend}
+          maxQaIterations={maxQaIterations}
+          onMaxQaIterationsChange={setMaxQaIterations}
           disabled={isCreating}
           error={error}
           onError={setError}

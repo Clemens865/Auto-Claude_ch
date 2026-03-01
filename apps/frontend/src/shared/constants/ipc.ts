@@ -166,6 +166,7 @@ export const IPC_CHANNELS = {
   // Dialogs
   DIALOG_SELECT_DIRECTORY: 'dialog:selectDirectory',
   DIALOG_CREATE_PROJECT_FOLDER: 'dialog:createProjectFolder',
+  DIALOG_SELECT_FILE: 'dialog:selectFile',
   DIALOG_GET_DEFAULT_PROJECT_LOCATION: 'dialog:getDefaultProjectLocation',
 
   // App info

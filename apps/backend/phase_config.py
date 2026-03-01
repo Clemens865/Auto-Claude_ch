@@ -104,6 +104,10 @@ class TaskMetadataConfig(TypedDict, total=False):
     model: str
     thinkingLevel: str
     fastMode: bool
+    sourceFilePath: str
+    qaMode: str  # "standard" or "ralph"
+    memoryBackend: str  # "default", "graphiti", "claude-flow", "file"
+    maxQaIterations: int
 
 
 Phase = Literal["spec", "planning", "coding", "qa"]
@@ -280,6 +284,93 @@ def get_phase_model(
 
     # Fall back to default phase configuration
     return resolve_model_id(DEFAULT_PHASE_MODELS[phase])
+
+
+def get_qa_mode(spec_dir: Path, cli_override: str | None = None) -> str:
+    """
+    Resolve QA mode for a spec.
+
+    Priority: CLI arg > task_metadata.json > "standard"
+    """
+    if cli_override:
+        return cli_override
+
+    metadata_path = spec_dir / "task_metadata.json"
+    if metadata_path.exists():
+        try:
+            with open(metadata_path) as f:
+                metadata = json.load(f)
+            qa_mode = metadata.get("qaMode")
+            if qa_mode in ("standard", "ralph"):
+                return qa_mode
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning("Failed to read qaMode from %s: %s", metadata_path, e)
+
+    return "standard"
+
+
+def get_memory_backend(spec_dir: Path) -> str:
+    """
+    Resolve memory backend for a spec.
+
+    Priority: task_metadata.json > "default"
+    """
+    metadata_path = spec_dir / "task_metadata.json"
+    if metadata_path.exists():
+        try:
+            with open(metadata_path) as f:
+                metadata = json.load(f)
+            backend = metadata.get("memoryBackend")
+            if backend in ("default", "graphiti", "claude-flow", "file"):
+                return backend
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning("Failed to read memoryBackend from %s: %s", metadata_path, e)
+
+    return "default"
+
+
+def get_max_qa_iterations(spec_dir: Path, default: int = 3) -> int:
+    """
+    Resolve max QA iterations for a spec.
+
+    Priority: task_metadata.json > default (3)
+    """
+    metadata_path = spec_dir / "task_metadata.json"
+    if metadata_path.exists():
+        try:
+            with open(metadata_path) as f:
+                metadata = json.load(f)
+            iterations = metadata.get("maxQaIterations")
+            if isinstance(iterations, int) and 1 <= iterations <= 10:
+                return iterations
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning("Failed to read maxQaIterations from %s: %s", metadata_path, e)
+
+    return default
+
+
+def get_source_file_content(spec_dir: Path) -> str | None:
+    """
+    Read source file (PRD) content if configured in task metadata.
+
+    Returns the file content as a string, or None if not configured or not found.
+    """
+    metadata_path = spec_dir / "task_metadata.json"
+    if metadata_path.exists():
+        try:
+            with open(metadata_path) as f:
+                metadata = json.load(f)
+            source_path = metadata.get("sourceFilePath")
+            if source_path:
+                source_file = Path(source_path)
+                if source_file.exists():
+                    return source_file.read_text(encoding="utf-8")
+                else:
+                    logger.warning("Source file not found: %s", source_path)
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning("Failed to read sourceFilePath from %s: %s", metadata_path, e)
+
+    return None
 
 
 def get_phase_model_betas(
