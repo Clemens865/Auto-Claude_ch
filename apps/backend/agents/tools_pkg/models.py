@@ -241,6 +241,15 @@ AGENT_CONFIGS = {
         "thinking_default": "medium",
     },
     # ═══════════════════════════════════════════════════════════════════════
+    # ORCHESTRATOR PHASES (Read + Write for decomposition output)
+    # ═══════════════════════════════════════════════════════════════════════
+    "decomposer": {
+        "tools": BASE_READ_TOOLS + BASE_WRITE_TOOLS,
+        "mcp_servers": [],  # No MCP needed — reads project structure and writes JSON
+        "auto_claude_tools": [],
+        "thinking_default": "high",  # Decomposition requires careful analysis
+    },
+    # ═══════════════════════════════════════════════════════════════════════
     # UTILITY PHASES (Minimal, no MCP)
     # ═══════════════════════════════════════════════════════════════════════
     "insights": {

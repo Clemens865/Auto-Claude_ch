@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Play, Square, Clock, Zap, Target, Shield, Gauge, Palette, FileCode, Bug, Wrench, Loader2, AlertTriangle, RotateCcw, Archive, GitPullRequest, MoreVertical } from 'lucide-react';
+import { Play, Square, Clock, Zap, Target, Shield, Gauge, Palette, FileCode, Bug, Wrench, Loader2, AlertTriangle, RotateCcw, Archive, GitPullRequest, MoreVertical, Network, Link } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -105,6 +105,10 @@ function taskCardPropsAreEqual(prevProps: TaskCardProps, nextProps: TaskCardProp
     prevTask.metadata?.complexity === nextTask.metadata?.complexity &&
     prevTask.metadata?.archivedAt === nextTask.metadata?.archivedAt &&
     prevTask.metadata?.prUrl === nextTask.metadata?.prUrl &&
+    prevTask.metadata?.isOrchestratorTask === nextTask.metadata?.isOrchestratorTask &&
+    prevTask.metadata?.orchestratorStatus === nextTask.metadata?.orchestratorStatus &&
+    prevTask.metadata?.parentTaskId === nextTask.metadata?.parentTaskId &&
+    prevTask.metadata?.childTaskIds?.length === nextTask.metadata?.childTaskIds?.length &&
     // Check if any subtask statuses changed (compare all subtasks)
     prevTask.subtasks.every((s, i) => s.status === nextTask.subtasks[i]?.status)
   );
@@ -450,6 +454,26 @@ export const TaskCard = memo(function TaskCard({
               >
                 <Zap className="h-2.5 w-2.5" />
                 {t('metadata.fastMode')}
+              </Badge>
+            )}
+            {/* Orchestrator badge - parent orchestrator tasks */}
+            {task.metadata?.isOrchestratorTask && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 flex items-center gap-1 bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
+                <Network className="h-2.5 w-2.5" />
+                {t('orchestrator.badge')}
+              </Badge>
+            )}
+            {/* Orchestrator progress indicator */}
+            {task.metadata?.isOrchestratorTask && task.metadata?.orchestratorStatus === 'running' && task.metadata?.childTaskIds && (
+              <span className="text-[10px] text-muted-foreground">
+                {t('orchestrator.progress', { completed: '?', total: task.metadata.childTaskIds.length })}
+              </span>
+            )}
+            {/* Child of orchestrator badge */}
+            {task.metadata?.parentTaskId && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 flex items-center gap-1 bg-indigo-500/10 text-indigo-400 border-indigo-500/20">
+                <Link className="h-2.5 w-2.5" />
+                {t('orchestrator.childOf')}
               </Badge>
             )}
             {/* Category badge with icon */}

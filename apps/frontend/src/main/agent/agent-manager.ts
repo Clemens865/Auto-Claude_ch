@@ -335,6 +335,83 @@ export class AgentManager extends EventEmitter {
   }
 
   /**
+   * Start task decomposition process (decomposer_runner.py)
+   * Decomposes a PRD/spec into independent workstreams for parallel execution.
+   */
+  async startDecomposition(
+    taskId: string,
+    projectPath: string,
+    specDir: string,
+    metadata?: SpecCreationMetadata,
+    projectId?: string
+  ): Promise<void> {
+    // Pre-flight auth check: Verify active profile has valid authentication
+    // Ensure profile manager is initialized to prevent race condition
+    let profileManager: ClaudeProfileManager;
+    try {
+      profileManager = await initializeClaudeProfileManager();
+    } catch (error) {
+      console.error('[AgentManager] Failed to initialize profile manager:', error);
+      this.emit('error', taskId, 'Failed to initialize profile manager. Please check file permissions and disk space.');
+      return;
+    }
+    if (!profileManager.hasValidAuth()) {
+      this.emit('error', taskId, 'Claude authentication required. Please authenticate in Settings > Claude Profiles before starting tasks.');
+      return;
+    }
+
+    // Ensure Python environment is ready before spawning process (prevents exit code 127 race condition)
+    const pythonStatus = await this.processManager.ensurePythonEnvReady('AgentManager');
+    if (!pythonStatus.ready) {
+      this.emit('error', taskId, `Python environment not ready: ${pythonStatus.error || 'initialization failed'}`);
+      return;
+    }
+
+    const autoBuildSource = this.processManager.getAutoBuildSourcePath();
+
+    if (!autoBuildSource) {
+      this.emit('error', taskId, 'Auto-build source path not found. Please configure it in App Settings.');
+      return;
+    }
+
+    const decomposerPath = path.join(autoBuildSource, 'runners', 'decomposer_runner.py');
+
+    if (!existsSync(decomposerPath)) {
+      this.emit('error', taskId, `Decomposer runner not found at: ${decomposerPath}`);
+      return;
+    }
+
+    // Get combined environment variables
+    const combinedEnv = this.processManager.getCombinedEnv(projectPath);
+
+    const args = [decomposerPath, '--spec-dir', specDir, '--project-dir', projectPath];
+
+    // Pass model and thinking level configuration
+    // Validate thinking levels to prevent legacy values (e.g. 'ultrathink') from reaching the backend
+    if (metadata?.isAutoProfile && metadata.phaseModels && metadata.phaseThinking) {
+      // For decomposition, use the spec phase model (decomposition is a planning-like activity)
+      args.push('--model', metadata.phaseModels.spec);
+      args.push('--thinking-level', sanitizeThinkingLevel(metadata.phaseThinking.spec));
+    } else if (metadata?.model) {
+      // Non-auto profile: use single model and thinking level
+      args.push('--model', metadata.model);
+      if (metadata.thinkingLevel) {
+        args.push('--thinking-level', sanitizeThinkingLevel(metadata.thinkingLevel));
+      }
+    }
+
+    // Store context for potential restart
+    this.storeTaskContext(taskId, projectPath, '', {}, false, undefined, specDir, metadata, undefined, projectId);
+
+    // Register with unified OperationRegistry for proactive swap support
+    this.registerTaskWithOperationRegistry(taskId, 'spec-creation', { projectPath, specDir });
+
+    // Use projectPath as cwd instead of autoBuildSource to avoid cross-drive file access
+    // issues on Windows. The script path is absolute so Python finds its modules via sys.path[0]. (#1661)
+    await this.processManager.spawnProcess(taskId, projectPath, args, combinedEnv, 'task-decomposition', projectId);
+  }
+
+  /**
    * Start task execution (run.py)
    */
   async startTaskExecution(

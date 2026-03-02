@@ -106,6 +106,10 @@ interface TaskFormFieldsProps {
   maxQaIterations?: number;
   onMaxQaIterationsChange?: (value: number) => void;
 
+  // Orchestrator mode
+  isOrchestratorTask?: boolean;
+  onIsOrchestratorTaskChange?: (value: boolean) => void;
+
   // Form state
   disabled?: boolean;
   error?: string | null;
@@ -168,6 +172,8 @@ export function TaskFormFields({
   onMemoryBackendChange,
   maxQaIterations = 3,
   onMaxQaIterationsChange,
+  isOrchestratorTask = false,
+  onIsOrchestratorTaskChange,
   disabled = false,
   error,
   onError,
@@ -618,6 +624,25 @@ export function TaskFormFields({
         {showBuildSettings && onShowBuildSettingsChange && (
           <div id={`${prefix}build-settings-section`} className="space-y-4 p-4 rounded-lg border border-border bg-muted/30">
             <p className="text-xs text-muted-foreground">{t('tasks:form.buildSettingsDescription')}</p>
+
+            {/* Orchestrator Mode - only shown when a source file (PRD) is set */}
+            {sourceFilePath && onIsOrchestratorTaskChange && (
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium text-foreground">
+                    {t('tasks:form.orchestratorMode')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t('tasks:form.orchestratorModeDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={isOrchestratorTask}
+                  onCheckedChange={onIsOrchestratorTaskChange}
+                  disabled={disabled}
+                />
+              </div>
+            )}
 
             {/* QA Mode */}
             {onQaModeChange && (

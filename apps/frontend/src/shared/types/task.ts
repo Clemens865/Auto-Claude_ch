@@ -160,6 +160,7 @@ export interface TaskDraft {
   qaMode?: 'standard' | 'ralph';
   memoryBackend?: 'default' | 'graphiti' | 'claude-flow' | 'file';
   maxQaIterations?: number;
+  isOrchestratorTask?: boolean;  // Decompose into parallel workstreams
   showBuildSettings?: boolean;
   savedAt: Date;
 }
@@ -184,7 +185,7 @@ export type TaskCategory =
 
 export interface TaskMetadata {
   // Origin tracking
-  sourceType?: 'ideation' | 'manual' | 'imported' | 'insights' | 'roadmap' | 'linear' | 'github' | 'gitlab';
+  sourceType?: 'ideation' | 'manual' | 'imported' | 'insights' | 'roadmap' | 'linear' | 'github' | 'gitlab' | 'orchestrator';
   ideationType?: string;  // e.g., 'code_improvements', 'security_hardening'
   ideaId?: string;  // Reference to original idea if converted
   featureId?: string;  // Reference to roadmap feature if from roadmap
@@ -254,6 +255,12 @@ export interface TaskMetadata {
   qaMode?: 'standard' | 'ralph';  // QA validation mode
   memoryBackend?: 'default' | 'graphiti' | 'claude-flow' | 'file';  // Memory backend override
   maxQaIterations?: number;  // Max QA review/fix cycles (default: 3)
+
+  // Orchestrator meta-task fields
+  isOrchestratorTask?: boolean;  // True for parent orchestrator tasks
+  orchestratorStatus?: 'decomposing' | 'running' | 'merging' | 'completed' | 'partial_failure';
+  parentTaskId?: string;  // Child → parent link (specId of parent orchestrator task)
+  childTaskIds?: string[];  // Parent → children (specIds of child tasks)
 
   // Archive status
   archivedAt?: string;  // ISO date when task was archived
