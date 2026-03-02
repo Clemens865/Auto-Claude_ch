@@ -296,6 +296,12 @@ export class AgentManager extends EventEmitter {
       args.push('--base-branch', baseBranch);
     }
 
+    // Orchestrator tasks: stop after spec creation so the task can restart
+    // and enter the decomposition phase (decomposer_runner.py) instead of run.py
+    if (metadata?.isOrchestratorTask) {
+      args.push('--no-build');
+    }
+
     // Check if user requires review before coding
     if (!metadata?.requireReviewBeforeCoding) {
       // Auto-approve: When user starts a task from the UI without requiring review

@@ -74,6 +74,8 @@ export interface SpecCreationMetadata {
   // Workspace mode - whether to use worktree isolation
   useWorktree?: boolean; // If false, use --direct mode (no worktree isolation)
   useLocalBranch?: boolean; // If true, use local branch directly instead of preferring origin/branch
+  // Orchestrator mode - decompose PRD into parallel workstreams
+  isOrchestratorTask?: boolean;
 }
 
 export interface IdeationProgressData {

@@ -165,6 +165,48 @@ export function registerAgenteventsHandlers(
 
     if (processType === "spec-creation") {
       console.warn(`[Task ${taskId}] Spec creation completed with code ${code}`);
+
+      // Auto-trigger decomposition for orchestrator tasks after spec creation succeeds
+      if (code === 0) {
+        const { task: specTask, project: specProject } = findTaskAndProject(taskId, projectId);
+        if (specTask?.metadata?.isOrchestratorTask && specProject) {
+          const specsBaseDir = getSpecsDir(specProject.autoBuildPath);
+          const specDir = path.join(specProject.path, specsBaseDir, specTask.specId);
+          const specFilePath = path.join(specDir, AUTO_BUILD_PATHS.SPEC_FILE);
+
+          if (existsSync(specFilePath)) {
+            console.warn(`[Task ${taskId}] Orchestrator: spec created, auto-starting decomposition`);
+            // Small delay to let XState settle before spawning the next process
+            setTimeout(() => {
+              agentManager.startDecomposition(taskId, specProject.path, specDir, specTask.metadata, specProject.id);
+            }, 500);
+          }
+        }
+      }
+      return;
+    }
+
+    // Auto-trigger coordinator after decomposition completes
+    if (processType === "task-decomposition") {
+      console.warn(`[Task ${taskId}] Decomposition completed with code ${code}`);
+
+      if (code === 0) {
+        const { task: decompTask, project: decompProject } = findTaskAndProject(taskId, projectId);
+        if (decompTask?.metadata?.isOrchestratorTask && decompProject) {
+          const specsBaseDir = getSpecsDir(decompProject.autoBuildPath);
+          const specDir = path.join(decompProject.path, specsBaseDir, decompTask.specId);
+          const decompositionPath = path.join(specDir, 'decomposition.json');
+
+          if (existsSync(decompositionPath)) {
+            console.warn(`[Task ${taskId}] Orchestrator: decomposition done, starting child coordination`);
+            import('../orchestrator/orchestrator-coordinator').then(({ onDecompositionComplete }) => {
+              onDecompositionComplete(taskId, decompTask.specId, decompProject.id, decompProject.path, specDir);
+            }).catch((err) => {
+              console.error(`[Task ${taskId}] Failed to start orchestrator coordination:`, err);
+            });
+          }
+        }
+      }
       return;
     }
 
