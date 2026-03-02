@@ -263,6 +263,8 @@
     "sourceFileDescription": "Attach a PRD or spec document to provide full context to the AI agents.",
     "sourceFileBrowse": "Browse",
     "sourceFileClear": "Clear",
+    "orchestratorMode": "Orchestrator Mode",
+    "orchestratorModeDescription": "Decompose this PRD into independent workstreams and run them in parallel. Best for large PRDs with 3+ features.",
     "buildSettings": "Build Settings",
     "buildSettingsDescription": "Configure how AI agents process this task.",
     "qaMode": "QA Mode",
@@ -323,6 +325,16 @@
         }
       }
     }
+  },
+  "orchestrator": {
+    "badge": "Orchestrator",
+    "decomposing": "Decomposing PRD...",
+    "running": "Running workstreams",
+    "merging": "Merging workstreams",
+    "completed": "All workstreams merged",
+    "partialFailure": "Some workstreams failed",
+    "progress": "{{completed}}/{{total}} workstreams",
+    "childOf": "Part of orchestrator task"
   },
   "subtasks": {
     "untitled": "Untitled subtask"

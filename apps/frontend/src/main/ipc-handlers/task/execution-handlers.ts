@@ -283,12 +283,34 @@ export function registerTaskExecutionHandlers(
       // (run.py) which expects subtasks to exist. Now we check the actual plan file.
       const needsImplementation = hasSpec && !planHasSubtasks;
 
-      console.warn('[TASK_START] hasSpec:', hasSpec, 'planHasSubtasks:', planHasSubtasks, 'needsSpecCreation:', needsSpecCreation, 'needsImplementation:', needsImplementation);
+      // Check if this is an orchestrator task that needs decomposition
+      const isOrchestratorTask = task.metadata?.isOrchestratorTask === true;
+      const decompositionPath = path.join(specDir, 'decomposition.json');
+      const hasDecomposition = existsSync(decompositionPath);
+
+      console.warn('[TASK_START] hasSpec:', hasSpec, 'planHasSubtasks:', planHasSubtasks, 'needsSpecCreation:', needsSpecCreation, 'needsImplementation:', needsImplementation, 'isOrchestratorTask:', isOrchestratorTask, 'hasDecomposition:', hasDecomposition);
 
       // Get base branch: task-level override takes precedence over project settings
       const baseBranch = task.metadata?.baseBranch || project.settings?.mainBranch;
 
-      if (needsSpecCreation) {
+      if (isOrchestratorTask && needsSpecCreation) {
+        // Orchestrator task with no spec yet — run spec creation first (same as normal)
+        // After spec creation, the process will complete and the user restarts,
+        // which hits the decomposition path below
+        const taskDescription = task.description || task.title;
+        console.warn('[TASK_START] Orchestrator task: starting spec creation first for:', task.specId);
+        agentManager.startSpecCreation(taskId, project.path, taskDescription, specDir, task.metadata, baseBranch, project.id);
+      } else if (isOrchestratorTask && !hasDecomposition) {
+        // Orchestrator task with spec but no decomposition — run decomposition
+        console.warn('[TASK_START] Orchestrator task: starting decomposition for:', task.specId);
+        agentManager.startDecomposition(taskId, project.path, specDir, task.metadata, project.id);
+      } else if (isOrchestratorTask && hasDecomposition) {
+        // Orchestrator task with decomposition — trigger child creation/coordination
+        console.warn('[TASK_START] Orchestrator task: resuming coordination for:', task.specId);
+        // Import and call the coordinator
+        const { onDecompositionComplete } = await import('../../orchestrator/orchestrator-coordinator');
+        await onDecompositionComplete(taskId, task.specId, project.id, project.path, specDir);
+      } else if (needsSpecCreation) {
         // No spec file - need to run spec_runner.py to create the spec
         const taskDescription = task.description || task.title;
         console.warn('[TASK_START] Starting spec creation for:', task.specId, 'in:', specDir, 'baseBranch:', baseBranch);

@@ -263,6 +263,8 @@
     "sourceFileDescription": "Joindre un PRD ou un document de spécification pour fournir le contexte complet aux agents IA.",
     "sourceFileBrowse": "Parcourir",
     "sourceFileClear": "Effacer",
+    "orchestratorMode": "Mode Orchestrateur",
+    "orchestratorModeDescription": "Décomposer ce PRD en flux de travail indépendants et les exécuter en parallèle. Idéal pour les grands PRD avec 3+ fonctionnalités.",
     "buildSettings": "Paramètres de build",
     "buildSettingsDescription": "Configurer le traitement de cette tâche par les agents IA.",
     "qaMode": "Mode QA",
@@ -323,6 +325,16 @@
         }
       }
     }
+  },
+  "orchestrator": {
+    "badge": "Orchestrateur",
+    "decomposing": "Décomposition du PRD...",
+    "running": "Exécution des flux de travail",
+    "merging": "Fusion des flux de travail",
+    "completed": "Tous les flux de travail fusionnés",
+    "partialFailure": "Certains flux de travail ont échoué",
+    "progress": "{{completed}}/{{total}} flux de travail",
+    "childOf": "Partie d'une tâche orchestrateur"
   },
   "subtasks": {
     "untitled": "Sous-tâche sans titre"

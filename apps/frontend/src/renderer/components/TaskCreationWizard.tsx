@@ -134,6 +134,7 @@ export function TaskCreationWizard({
   const [qaMode, setQaMode] = useState<'standard' | 'ralph'>('standard');
   const [memoryBackend, setMemoryBackend] = useState<'default' | 'graphiti' | 'claude-flow' | 'file'>('default');
   const [maxQaIterations, setMaxQaIterations] = useState(3);
+  const [isOrchestratorTask, setIsOrchestratorTask] = useState(false);
 
   // Show Fast Mode toggle when any phase uses an Opus model
   const showFastModeToggle = useMemo(() => {
@@ -185,6 +186,7 @@ export function TaskCreationWizard({
         setMemoryBackend(draft.memoryBackend ?? 'default');
         setMaxQaIterations(draft.maxQaIterations ?? 3);
         setShowBuildSettings(draft.showBuildSettings ?? false);
+        setIsOrchestratorTask(draft.isOrchestratorTask ?? false);
         setIsDraftRestored(true);
 
         if (draft.category || draft.priority || draft.complexity || draft.impact) {
@@ -213,6 +215,7 @@ export function TaskCreationWizard({
         setQaMode('standard');
         setMemoryBackend('default');
         setMaxQaIterations(3);
+        setIsOrchestratorTask(false);
         setBaseBranch(PROJECT_DEFAULT_BRANCH);
         setUseWorktree(true);
         setIsDraftRestored(false);
@@ -294,9 +297,10 @@ export function TaskCreationWizard({
     qaMode: qaMode !== 'standard' ? qaMode : undefined,
     memoryBackend: memoryBackend !== 'default' ? memoryBackend : undefined,
     maxQaIterations: maxQaIterations !== 3 ? maxQaIterations : undefined,
+    isOrchestratorTask: isOrchestratorTask || undefined,
     showBuildSettings: showBuildSettings || undefined,
     savedAt: new Date()
-  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding, fastMode, sourceFilePath, qaMode, memoryBackend, maxQaIterations, showBuildSettings]);
+  }), [projectId, title, description, category, priority, complexity, impact, profileId, model, thinkingLevel, phaseModels, phaseThinking, images, referencedFiles, requireReviewBeforeCoding, fastMode, sourceFilePath, qaMode, memoryBackend, maxQaIterations, isOrchestratorTask, showBuildSettings]);
 
   /**
    * Detect @ mention being typed and show autocomplete
@@ -483,6 +487,7 @@ export function TaskCreationWizard({
       if (qaMode !== 'standard') metadata.qaMode = qaMode;
       if (memoryBackend !== 'default') metadata.memoryBackend = memoryBackend;
       if (maxQaIterations !== 3) metadata.maxQaIterations = maxQaIterations;
+      if (isOrchestratorTask) metadata.isOrchestratorTask = true;
 
       const task = await createTask(projectId, title.trim(), description.trim(), metadata);
       if (task) {
@@ -520,6 +525,7 @@ export function TaskCreationWizard({
     setQaMode('standard');
     setMemoryBackend('default');
     setMaxQaIterations(3);
+    setIsOrchestratorTask(false);
     setBaseBranch(PROJECT_DEFAULT_BRANCH);
     setUseWorktree(true);
     setError(null);
@@ -715,6 +721,8 @@ export function TaskCreationWizard({
           onMemoryBackendChange={setMemoryBackend}
           maxQaIterations={maxQaIterations}
           onMaxQaIterationsChange={setMaxQaIterations}
+          isOrchestratorTask={isOrchestratorTask}
+          onIsOrchestratorTaskChange={setIsOrchestratorTask}
           disabled={isCreating}
           error={error}
           onError={setError}
